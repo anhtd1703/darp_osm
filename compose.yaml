@@ -1,0 +1,23 @@
+services:
+  osrm:
+    image: ${OSRM_IMAGE:-ghcr.io/project-osrm/osrm-backend:latest}
+    command: osrm-routed --algorithm mld /data/vietnam-latest.osrm
+    volumes: [./data:/data]
+    ports: ['127.0.0.1:5000:5000']
+  prepare:
+    image: ${OSRM_IMAGE:-ghcr.io/project-osrm/osrm-backend:latest}
+    profiles: [setup]
+    volumes: [./data:/data]
+    entrypoint: []
+  download:
+    image: curlimages/curl:8.12.1
+    profiles: [setup]
+    user: '0:0'
+    volumes: [./data:/data]
+    command: ['--fail','--location','--retry','3','-o','/data/vietnam-latest.osm.pbf','https://download.geofabrik.de/asia/vietnam-latest.osm.pbf']
+  app:
+    build: .
+    environment:
+      OSRM_URL: http://osrm:5000
+    volumes: [./data:/work/data, ./results:/work/results, ./config.json:/work/config.json:ro]
+    command: ['python','src/main.py','--help']
